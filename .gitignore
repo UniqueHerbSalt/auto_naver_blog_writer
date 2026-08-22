@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.env
+
+# 네이버 로그인 세션 / 로컬 초안 — 절대 커밋 금지
+.state/
+chrome-profile/
+data/

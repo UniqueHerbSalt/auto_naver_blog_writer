@@ -1,0 +1,21 @@
+[project]
+name = "naver-blog-mcp"
+version = "0.1.0"
+description = "네이버 블로그 발행용 MCP 서버 — Claude가 조사·작성하고, 이 서버가 발행한다"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.2.0",
+    "pydantic>=2.6",
+    "selenium>=4.20",
+    "requests>=2.31",
+]
+
+[project.scripts]
+naver-blog-mcp = "naver_blog_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/naver_blog_mcp"]
