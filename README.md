@@ -14,7 +14,8 @@
 발행 계층은 [Auto-CooPangPartners](https://github.com/UniqueHerbSalt/Auto-CooPangPartners)
 의 `naver.py` 에서 가져온다. 실전에서 다듬어진 코드라 새로 짜지 않는다.
 
-자세한 설계는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 참고.
+자세한 설계는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
+글을 쓰는 Claude 를 위한 지침은 [docs/WRITER_PROMPT.md](docs/WRITER_PROMPT.md) 참고.
 
 ## 실행 위치
 
