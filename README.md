@@ -22,25 +22,41 @@
 | [SOURCES.md](docs/SOURCES.md) | 소식 출처와 **주제 선별 기준** |
 | [STYLE.md](docs/STYLE.md) | 글 구조, 제목, 루머 표기 |
 | [WRITER_PROMPT.md](docs/WRITER_PROMPT.md) | 글 쓰는 Claude 용 지침 (진입점) |
-| [DEPLOY.md](docs/DEPLOY.md) | NAS Docker 배포, HTTPS, 여러 기기 접속 |
+| [DEPLOY.md](docs/DEPLOY.md) | (선택) NAS Docker 배포 — 기본 구성이 아니다 |
 
-## 실행 위치
+## 실행 위치 — 쓰는 노트북에 깔면 된다
 
-**로컬 PC 에서 돌아야 한다.** 원격 컨테이너에서는 동작하지 않는다.
+이 서버는 **실제 크롬 창을 띄우는** 서버다. 그래서 글을 쓰는 사람이 앉아
+있는 기기에서 도는 게 맞다.
 
-- Selenium 이 실제 크로미움 창을 띄운다
-- 네이버 로그인 세션이 로컬 크롬 프로필에 저장된다
-- 최초 로그인(2단계 인증 포함)은 사람이 직접 해야 한다
-- 네이버는 headless 탐지가 강해 `headless=False` 가 기본이다
+- 크롬 창이 눈앞에 뜬다. **에디터가 무슨 짓을 하는지 그대로 보인다** —
+  셀렉터가 깨졌을 때 원인을 바로 안다
+- 로그인 세션이 끊기면 그 창에서 그냥 다시 로그인하면 된다
+- 일반 데스크톱 크롬이라 네이버 탐지 관점에서 가장 정상적인 지문이다
+- 발행 전 검수도 화면에서 바로 한다
+
+서버 없이 **stdio 로 붙는다** — 포트도, 인증서도, 토큰도 필요 없다.
+
+> 원격 컨테이너·CI 에서는 동작하지 않는다. 화면이 없고 사람이 로그인할
+> 수 없기 때문이다. 굳이 상시 가동 서버로 돌리려면
+> [DEPLOY.md](docs/DEPLOY.md) 를 보되, 위 이점을 전부 포기하게 된다.
 
 ## 설치
 
 ```bash
+git clone <이 저장소> && cd auto_naver_blog_writer
+python3 -m venv .venv && source .venv/bin/activate   # 윈도우: .venv\Scripts\activate
 pip install -e .
 ```
 
-크로미움/크롬은 미리 설치돼 있어야 한다. 드라이버는 Selenium Manager 가
-자동으로 맞춰 주므로 따로 받지 않아도 된다.
+크롬은 평소 쓰던 게 깔려 있으면 된다. 드라이버는 Selenium Manager 가
+자동으로 맞춰 주므로 따로 받지 않는다.
+
+> **평소 쓰는 크롬과 섞이지 않는다.** 이 서버는 전용 프로필
+> (`~/.local/share/naverblogmcp/chrome-profile`, macOS 는
+> `~/Library/Application Support/NaverBlogMCP/`)을 쓴다. 그래서 크롬을
+> 켜 둔 채로도 돌아가고, 대신 그 프로필에서 네이버 로그인을 **한 번**
+> 해 줘야 한다.
 
 ## 설정
 
@@ -57,18 +73,39 @@ pip install -e .
 전체 목록은 `src/naver_blog_mcp/config.py` 의 `NaverConfig` 참고.
 `~/.config/naverblogmcp/config.toml` 로도 줄 수 있다.
 
-MCP 클라이언트 등록 예:
+## 등록
+
+Claude Code:
+
+```bash
+claude mcp add naver-blog -e NAVER_BLOG_BLOG_ID=myblog -- /경로/.venv/bin/naver-blog-mcp
+```
+
+Claude Desktop (`claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "naver-blog": {
-      "command": "naver-blog-mcp",
+      "command": "/경로/.venv/bin/naver-blog-mcp",
       "env": { "NAVER_BLOG_BLOG_ID": "myblog" }
     }
   }
 }
 ```
+
+가상환경 안의 실행 파일을 **절대경로**로 준다. GUI 앱은 셸의 PATH 를
+읽지 않아 이름만 쓰면 못 찾는다.
+
+## 최초 실행
+
+1. `check_auth` 를 호출한다 — 크롬 창이 뜬다
+2. 창에서 네이버에 로그인한다 (2단계 인증 포함, 최대 10분 기다린다)
+3. **로그인 상태 유지를 켠다.** IP보안은 끄는 편이 좋다 — 켜져 있으면
+   접속 IP 가 바뀔 때 세션이 끊긴다
+4. 이후 실행부터는 프로필에 세션이 남아 자동으로 통과한다
+
+세션이 만료되면 `check_auth` 가 다시 로그인 창을 띄운다.
 
 ## 도구
 
@@ -102,7 +139,26 @@ pytest
 
 브라우저 없이 도는 부분(HTML 파싱, 블록 렌더링, 발행 안전장치)을 덮는다.
 
+## 문제가 생기면
+
+크롬 창이 눈앞에 있으니 대부분 보면 안다. 그래도 안 보이는 경우:
+
+```
+~/.local/share/naverblogmcp/diagnostics/     # 실패 시점 스크린샷 + HTML
+```
+
+에디터 DOM 이 바뀌어 실패하면 여기 스크린샷을 보고 셀렉터를 고친다.
+추측으로 고치지 않으려고 남기는 자료다.
+
 ## 상태
 
-발행 파이프라인 구현 완료, 실제 네이버 계정 검증 전.
-글 작성 품질은 실제 발행 결과를 보며 다듬는다.
+발행 파이프라인 구현 완료, **실제 네이버 계정 검증 전.**
+
+미검증으로 남은 곳 두 군데 — 첫 실행에서 깨질 가능성이 가장 높다:
+
+- **임시저장 버튼 셀렉터** — 원본 코드에 없던 부분이라 클래스 후보와
+  "저장" 문구 폴백으로 추측해 넣었다. 실패해도 예외를 내지 않고 본문을
+  에디터에 남겨 둔다
+- **카테고리 목록 조회** — 발행 패널 DOM 을 추측했다
+
+둘 다 실패해도 글이 날아가지 않게 만들었다.
