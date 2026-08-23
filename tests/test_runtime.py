@@ -1,17 +1,15 @@
-"""브라우저 락과 베어러 인증 테스트.
+"""브라우저 락 테스트.
 
-여러 기기에서 붙어 쓰는 구성이라 여기가 깨지면 작성 중인 글이 날아가거나
-엉뚱한 글이 발행된다.
+크롬과 네이버 세션이 하나뿐이라, 두 작업이 겹치면 같은 에디터를 덮어써서
+작성 중인 글이 날아간다. 로컬 단일 클라이언트라도 안전하지 않다 — Claude 는
+한 번에 여러 도구를 병렬로 호출할 수 있다.
 """
 
 import threading
 
 import pytest
 
-from naver_blog_mcp.runtime import BearerAuth, BrowserLock, Busy
-
-
-# --- 락 ---
+from naver_blog_mcp.runtime import BrowserLock, Busy
 
 def test_lock_allows_sequential_work():
     lock = BrowserLock()
@@ -62,62 +60,3 @@ def test_busy_message_reports_what_is_running():
         with lock.hold("발행"):
             pass
     assert "카테고리 조회" in str(e.value)
-
-
-# --- 인증 ---
-
-class Spy:
-    def __init__(self):
-        self.called = False
-
-    async def __call__(self, scope, receive, send):
-        self.called = True
-
-
-async def call(app, headers, path="/mcp"):
-    sent = []
-
-    async def send(msg):
-        sent.append(msg)
-
-    await app({"type": "http", "path": path, "headers": headers}, None, send)
-    return sent
-
-
-def status_of(sent):
-    return next((m["status"] for m in sent if m["type"] == "http.response.start"), None)
-
-
-@pytest.mark.anyio
-async def test_valid_token_passes_through():
-    spy = Spy()
-    app = BearerAuth(spy, "secret")
-    await call(app, [(b"authorization", b"Bearer secret")])
-    assert spy.called
-
-
-@pytest.mark.anyio
-@pytest.mark.parametrize("headers", [
-    [],                                          # 헤더 없음
-    [(b"authorization", b"Bearer wrong")],       # 틀린 토큰
-    [(b"authorization", b"secret")],             # Bearer 접두어 없음
-    [(b"authorization", b"Basic secret")],       # 다른 방식
-    [(b"authorization", b"Bearer ")],            # 빈 토큰
-])
-async def test_bad_credentials_are_rejected(headers):
-    spy = Spy()
-    sent = await call(BearerAuth(spy, "secret"), headers)
-    assert not spy.called
-    assert status_of(sent) == 401
-
-
-@pytest.mark.anyio
-async def test_health_path_is_exempt():
-    spy = Spy()
-    await call(BearerAuth(spy, "secret"), [], path="/health")
-    assert spy.called
-
-
-@pytest.fixture
-def anyio_backend():
-    return "asyncio"

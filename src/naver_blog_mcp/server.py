@@ -20,7 +20,6 @@ import os
 import sys
 import uuid
 from dataclasses import dataclass, field
-from pathlib import Path
 
 try:  # MCP SDK 2.x
     from mcp.server.mcpserver import MCPServer as _McpServer
@@ -33,7 +32,7 @@ from .errors import BlogWriterError
 from .htmlparse import parse_html
 from .naver import NaverPublisher
 from .paths import data_dir, ensure_dirs
-from .runtime import BearerAuth, BrowserLock, Busy
+from .runtime import BrowserLock, Busy
 
 log = logging.getLogger(__name__)
 
@@ -279,76 +278,22 @@ def discard_draft(draft_id: str = "") -> str:
     return "초안 상태를 정리하고 브라우저를 닫았습니다."
 
 
-def _env_bool(name: str, default: bool = False) -> bool:
-    raw = os.environ.get(name)
-    return default if raw is None else raw.strip().lower() in ("1", "true", "yes", "on")
-
-
 def main() -> None:
-    """stdio(로컬) 또는 HTTPS(네트워크)로 서버를 띄운다.
+    """stdio 로 서버를 띄운다.
 
-    `NAVER_BLOG_TRANSPORT=http` 로 네트워크 모드가 된다. NAS 에 올려 여러
-    기기에서 붙어 쓰는 구성이 이쪽이다.
+    이 서버는 실제 크롬 창을 여는 서버라 글 쓰는 사람의 PC 에서 돌아야 한다.
+    그래서 네트워크로 열지 않고 MCP 클라이언트가 프로세스로 직접 띄운다 —
+    포트도, 인증서도, 토큰도 필요 없다.
     """
     logging.basicConfig(
         level=os.environ.get("NAVER_BLOG_LOG_LEVEL", "INFO").upper(),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
         stream=sys.stderr,  # stdout 은 stdio 전송의 프로토콜 채널이다
     )
-
-    transport = os.environ.get("NAVER_BLOG_TRANSPORT", "stdio").strip().lower()
     try:
-        if transport in ("stdio", ""):
-            mcp.run()
-        elif transport in ("http", "https", "streamable-http"):
-            _run_http()
-        else:
-            raise SystemExit(
-                f"알 수 없는 전송 방식: {transport!r} (stdio 또는 http)"
-            )
+        mcp.run()
     finally:
         _session.close()
-
-
-def _run_http() -> None:
-    """streamable-http 로 서비스한다. 인증서가 있으면 HTTPS 로 띄운다."""
-    import uvicorn
-
-    host = os.environ.get("NAVER_BLOG_HOST", "0.0.0.0")
-    port = int(os.environ.get("NAVER_BLOG_PORT", "8443"))
-    token = os.environ.get("NAVER_BLOG_TOKEN", "").strip()
-    certfile = os.environ.get("NAVER_BLOG_TLS_CERT", "").strip()
-    keyfile = os.environ.get("NAVER_BLOG_TLS_KEY", "").strip()
-
-    app = mcp.streamable_http_app()
-
-    if token:
-        app = BearerAuth(app, token)
-    else:
-        # 이 서버는 블로그 발행 권한을 그대로 들고 있다. 토큰 없이 네트워크에
-        # 열면 접근 가능한 누구나 글을 올릴 수 있다.
-        log.warning(
-            "NAVER_BLOG_TOKEN 이 비어 있습니다 — 인증 없이 열립니다. "
-            "네트워크에 노출한다면 반드시 토큰을 설정하세요."
-        )
-
-    if certfile and keyfile:
-        missing = [p for p in (certfile, keyfile) if not Path(p).is_file()]
-        if missing:
-            raise SystemExit(f"인증서 파일을 찾을 수 없습니다: {', '.join(missing)}")
-        scheme = "https"
-    else:
-        certfile = keyfile = None
-        scheme = "http"
-        log.warning("인증서가 없어 평문 HTTP 로 띄웁니다.")
-
-    log.info("MCP 서버: %s://%s:%d/mcp (인증 %s)",
-             scheme, host, port, "켜짐" if token else "꺼짐")
-    uvicorn.run(
-        app, host=host, port=port,
-        ssl_certfile=certfile, ssl_keyfile=keyfile,
-        log_config=None,  # 위에서 잡은 로깅 설정을 덮어쓰지 않게 한다
-    )
 
 
 if __name__ == "__main__":

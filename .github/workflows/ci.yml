@@ -1,0 +1,18 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      # 브라우저가 필요한 경로는 테스트에 없다 — 파싱·렌더링·안전장치만 검증한다.
+      - run: pytest -q

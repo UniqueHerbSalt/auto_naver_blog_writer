@@ -9,7 +9,3 @@ venv/
 .state/
 chrome-profile/
 data/
-
-# 배포 산출물 — 비밀이 들어간다
-.env
-certs/
