@@ -22,6 +22,7 @@
 | [SOURCES.md](docs/SOURCES.md) | 소식 출처와 **주제 선별 기준** |
 | [STYLE.md](docs/STYLE.md) | 글 구조, 제목, 루머 표기 |
 | [WRITER_PROMPT.md](docs/WRITER_PROMPT.md) | 글 쓰는 Claude 용 지침 (진입점) |
+| [DEPLOY.md](docs/DEPLOY.md) | NAS Docker 배포, HTTPS, 여러 기기 접속 |
 
 ## 실행 위치
 

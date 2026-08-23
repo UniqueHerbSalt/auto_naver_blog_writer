@@ -16,9 +16,11 @@ create_draft 와 publish 는 같은 브라우저 세션을 공유한다. create_
 from __future__ import annotations
 
 import logging
+import os
 import sys
 import uuid
 from dataclasses import dataclass, field
+from pathlib import Path
 
 try:  # MCP SDK 2.x
     from mcp.server.mcpserver import MCPServer as _McpServer
@@ -31,6 +33,7 @@ from .errors import BlogWriterError
 from .htmlparse import parse_html
 from .naver import NaverPublisher
 from .paths import data_dir, ensure_dirs
+from .runtime import BearerAuth, BrowserLock, Busy
 
 log = logging.getLogger(__name__)
 
@@ -52,6 +55,11 @@ class _Session:
     publisher: NaverPublisher | None = None
     drafts: dict[str, _Draft] = field(default_factory=dict)
 
+    #: 지금 에디터에 실제로 들어 있는 초안. 크롬은 하나뿐이라 새 글을 쓰면
+    #: 이전 글이 에디터에서 사라진다. 이 값과 다른 draft_id 로 발행을 시도하면
+    #: 엉뚱한 글이 나가므로 막아야 한다.
+    editor_holds: str | None = None
+
     def cfg(self) -> NaverConfig:
         if self.config is None:
             self.config = load_config()
@@ -70,9 +78,14 @@ class _Session:
             self.publisher.close()
             self.publisher = None
         self.drafts.clear()
+        self.editor_holds = None
 
 
 _session = _Session()
+
+#: 브라우저를 건드리는 모든 도구가 이 락을 거친다. 여러 기기에서 붙어 쓰므로
+#: 두 요청이 같은 에디터를 덮어쓰는 사고를 막아야 한다.
+_browser = BrowserLock()
 
 
 @mcp.tool()
@@ -85,13 +98,16 @@ def check_auth() -> str:
     """
     try:
         cfg = _session.cfg()
-        _session.pub().verify()
+        with _browser.hold("로그인 확인"):
+            _session.pub().verify()
         return (
             f"로그인 확인됨.\n"
             f"블로그: {cfg.blog_id or cfg.naver_id}\n"
             f"기본 공개범위: {cfg.open_type}\n"
             f"기본 카테고리: {cfg.category or '(블로그 기본값)'}"
         )
+    except Busy as e:
+        return str(e)
     except BlogWriterError as e:
         return f"로그인 실패: {e}"
 
@@ -126,7 +142,10 @@ def list_categories() -> str:
     발행 패널을 열어 목록을 읽고 바로 닫는다. **글이 발행되지 않는다.**
     """
     try:
-        names = _session.pub().list_categories()
+        with _browser.hold("카테고리 조회"):
+            names = _session.pub().list_categories()
+    except Busy as e:
+        return str(e)
     except BlogWriterError as e:
         return f"카테고리를 읽지 못했습니다: {e}"
     if not names:
@@ -170,15 +189,22 @@ def create_draft(
         category=category or _session.cfg().category,
     )
 
+    draft_id = uuid.uuid4().hex[:8]
     try:
-        publisher = _session.pub()
-        publisher.verify()
-        publisher.write_post(post)
-        saved = publisher.save_draft()
+        # 글 한 편을 쓰는 동안 다른 기기가 에디터를 건드리면 안 된다.
+        with _browser.hold(f"글 작성({title[:20]})"):
+            publisher = _session.pub()
+            publisher.verify()
+            # 이 시점부터 에디터의 이전 내용은 사라진다.
+            _session.editor_holds = None
+            publisher.write_post(post)
+            saved = publisher.save_draft()
+            _session.editor_holds = draft_id
+    except Busy as e:
+        return str(e)
     except BlogWriterError as e:
         return f"작성 실패: {e}"
 
-    draft_id = uuid.uuid4().hex[:8]
     _session.drafts[draft_id] = _Draft(post=post, saved=saved)
 
     where = (
@@ -213,14 +239,29 @@ def publish(draft_id: str, open_type: str = "") -> str:
     if open_type and open_type not in ("private", "public"):
         return f"open_type 은 private 또는 public 이어야 합니다: {open_type!r}"
 
-    try:
-        result = _session.pub().finish_publish(
-            open_type=open_type, category=draft.post.category
+    # 크롬은 하나뿐이다. 그 사이 다른 글을 썼다면 에디터에는 이 초안이 없다.
+    # 그대로 발행하면 **엉뚱한 글이 나간다** — 되돌릴 수 없으므로 막는다.
+    if _session.editor_holds != draft_id:
+        holding = _session.editor_holds
+        return (
+            f"이 초안({draft_id})은 더 이상 에디터에 없습니다"
+            + (f" — 현재 에디터에는 {holding} 이 들어 있습니다." if holding
+               else " — 에디터가 비어 있습니다.")
+            + "\n그대로 발행하면 다른 글이 나갑니다. create_draft 로 다시 작성하세요."
         )
+
+    try:
+        with _browser.hold("발행"):
+            result = _session.pub().finish_publish(
+                open_type=open_type, category=draft.post.category
+            )
+    except Busy as e:
+        return str(e)
     except BlogWriterError as e:
         return f"발행 실패: {e}"
 
     _session.drafts.pop(draft_id, None)
+    _session.editor_holds = None
     scope = result.extra.get("open_type", "")
     return f"발행 완료 (공개범위={scope}): {result.url}"
 
@@ -238,16 +279,76 @@ def discard_draft(draft_id: str = "") -> str:
     return "초안 상태를 정리하고 브라우저를 닫았습니다."
 
 
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    return default if raw is None else raw.strip().lower() in ("1", "true", "yes", "on")
+
+
 def main() -> None:
+    """stdio(로컬) 또는 HTTPS(네트워크)로 서버를 띄운다.
+
+    `NAVER_BLOG_TRANSPORT=http` 로 네트워크 모드가 된다. NAS 에 올려 여러
+    기기에서 붙어 쓰는 구성이 이쪽이다.
+    """
     logging.basicConfig(
-        level=logging.INFO,
+        level=os.environ.get("NAVER_BLOG_LOG_LEVEL", "INFO").upper(),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-        stream=sys.stderr,  # stdout 은 MCP 프로토콜 전용이다
+        stream=sys.stderr,  # stdout 은 stdio 전송의 프로토콜 채널이다
     )
+
+    transport = os.environ.get("NAVER_BLOG_TRANSPORT", "stdio").strip().lower()
     try:
-        mcp.run()
+        if transport in ("stdio", ""):
+            mcp.run()
+        elif transport in ("http", "https", "streamable-http"):
+            _run_http()
+        else:
+            raise SystemExit(
+                f"알 수 없는 전송 방식: {transport!r} (stdio 또는 http)"
+            )
     finally:
         _session.close()
+
+
+def _run_http() -> None:
+    """streamable-http 로 서비스한다. 인증서가 있으면 HTTPS 로 띄운다."""
+    import uvicorn
+
+    host = os.environ.get("NAVER_BLOG_HOST", "0.0.0.0")
+    port = int(os.environ.get("NAVER_BLOG_PORT", "8443"))
+    token = os.environ.get("NAVER_BLOG_TOKEN", "").strip()
+    certfile = os.environ.get("NAVER_BLOG_TLS_CERT", "").strip()
+    keyfile = os.environ.get("NAVER_BLOG_TLS_KEY", "").strip()
+
+    app = mcp.streamable_http_app()
+
+    if token:
+        app = BearerAuth(app, token)
+    else:
+        # 이 서버는 블로그 발행 권한을 그대로 들고 있다. 토큰 없이 네트워크에
+        # 열면 접근 가능한 누구나 글을 올릴 수 있다.
+        log.warning(
+            "NAVER_BLOG_TOKEN 이 비어 있습니다 — 인증 없이 열립니다. "
+            "네트워크에 노출한다면 반드시 토큰을 설정하세요."
+        )
+
+    if certfile and keyfile:
+        missing = [p for p in (certfile, keyfile) if not Path(p).is_file()]
+        if missing:
+            raise SystemExit(f"인증서 파일을 찾을 수 없습니다: {', '.join(missing)}")
+        scheme = "https"
+    else:
+        certfile = keyfile = None
+        scheme = "http"
+        log.warning("인증서가 없어 평문 HTTP 로 띄웁니다.")
+
+    log.info("MCP 서버: %s://%s:%d/mcp (인증 %s)",
+             scheme, host, port, "켜짐" if token else "꺼짐")
+    uvicorn.run(
+        app, host=host, port=port,
+        ssl_certfile=certfile, ssl_keyfile=keyfile,
+        log_config=None,  # 위에서 잡은 로깅 설정을 덮어쓰지 않게 한다
+    )
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ dependencies = [
     "selenium>=4.20",
     "requests>=2.31",
     "beautifulsoup4>=4.12",
+    "uvicorn>=0.30",
 ]
 
 [project.scripts]
@@ -22,7 +23,7 @@ build-backend = "hatchling.build"
 packages = ["src/naver_blog_mcp"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "anyio>=4.0"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

@@ -273,6 +273,10 @@ class NaverPublisher:
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option("useAutomationExtension", False)
+        for arg in self._cfg.extra_chrome_args.split():
+            # 컨테이너에서는 --no-sandbox 등이 필요하다. Xvfb 위에서 돌리면
+            # --headless 없이 실제 크롬으로 뜰 수 있어 네이버 탐지에 덜 걸린다.
+            options.add_argument(arg)
         if self._cfg.headless:
             # 네이버는 headless 탐지가 강해 기본 비권장. 사용자가 켠 경우에만.
             options.add_argument("--headless=new")

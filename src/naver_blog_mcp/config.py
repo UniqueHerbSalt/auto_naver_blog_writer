@@ -24,6 +24,9 @@ class NaverConfig:
     headless: bool = False      # 네이버 headless 탐지가 강해 기본 False
     profile_dir: str = ""       # 크롬 사용자 데이터 디렉터리(로그인 유지). 비우면 데이터 디렉터리
     chromedriver_path: str = "" # 비우면 Selenium Manager 자동 해석
+    #: 크롬에 덧붙일 인자(공백 구분). 컨테이너에서는 보통
+    #: "--no-sandbox --disable-dev-shm-usage" 가 필요하다.
+    extra_chrome_args: str = ""
     open_type: str = "private"  # 발행 공개범위: private(비공개, 안전 기본) | public
     category: str = ""          # 기본 카테고리 이름(비우면 블로그 기본값)
 
