@@ -4,184 +4,181 @@
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=Nanum+Myeongjo:wght@700;800&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 1000px; height: 1000px; overflow: hidden; }
   body {
     font-family: 'Noto Sans KR', sans-serif;
-    background: linear-gradient(160deg, #faf1e0 0%, #f6e7cd 55%, #f0dcba 100%);
+    background:
+      radial-gradient(circle at 78% 16%, rgba(255, 236, 170, 0.9) 0%, rgba(255, 236, 170, 0) 34%),
+      linear-gradient(165deg, #fdf6e9 0%, #f8ebd2 50%, #f1ddb9 100%);
     position: relative;
   }
 
-  /* 은은한 전통 창살 패턴 */
+  /* 은은한 창살 패턴 */
   .lattice {
     position: absolute; inset: 0;
     background-image:
-      linear-gradient(rgba(140, 90, 40, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(140, 90, 40, 0.05) 1px, transparent 1px);
-    background-size: 62px 62px;
+      linear-gradient(rgba(140, 90, 40, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(140, 90, 40, 0.045) 1px, transparent 1px);
+    background-size: 66px 66px;
   }
 
   /* 보름달 */
   .moon {
-    position: absolute; top: -130px; right: -110px;
-    width: 380px; height: 380px; border-radius: 50%;
-    background: radial-gradient(circle at 38% 38%, #fff8e2, #ffe9a8 60%, #f7d87c);
-    box-shadow: 0 0 90px 30px rgba(255, 226, 150, 0.55);
+    position: absolute; top: 86px; right: 118px;
+    width: 175px; height: 175px; border-radius: 50%;
+    background: radial-gradient(circle at 38% 36%, #fffbe9, #ffedb0 62%, #f9dd85);
+    box-shadow: 0 0 70px 24px rgba(255, 228, 150, 0.6);
   }
 
+  /* 구름 두 장 */
+  .cloud { position: absolute; opacity: 0.9; }
+  .cloud-1 { top: 208px; right: 96px; width: 190px; }
+  .cloud-2 { top: 122px; right: 262px; width: 140px; opacity: 0.75; }
+
+  /* 흩날리는 단풍 */
+  .leaf { position: absolute; }
+  .leaf-1 { top: 150px; left: 110px; width: 56px; transform: rotate(-24deg); opacity: 0.85; }
+  .leaf-2 { top: 300px; left: 78px; width: 38px; transform: rotate(38deg); opacity: 0.6; }
+  .leaf-3 { bottom: 210px; right: 96px; width: 60px; transform: rotate(18deg); opacity: 0.85; }
+  .leaf-4 { bottom: 330px; right: 76px; width: 36px; transform: rotate(-40deg); opacity: 0.55; }
+  .leaf-5 { bottom: 140px; left: 130px; width: 44px; transform: rotate(64deg); opacity: 0.7; }
+
   .frame {
-    position: absolute; inset: 26px;
-    border: 3px solid rgba(146, 84, 30, 0.35);
-    border-radius: 26px;
+    position: absolute; inset: 30px;
+    border: 3px solid rgba(146, 84, 30, 0.4);
+    border-radius: 28px;
   }
   .frame::after {
-    content: ''; position: absolute; inset: 8px;
+    content: ''; position: absolute; inset: 9px;
     border: 1.5px solid rgba(146, 84, 30, 0.22);
-    border-radius: 18px;
+    border-radius: 20px;
   }
+  /* 모서리 장식 */
+  .corner {
+    position: absolute; width: 46px; height: 46px;
+    border: 3px solid #b0402c; opacity: 0.75;
+  }
+  .c-tl { top: 52px; left: 52px; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
+  .c-tr { top: 52px; right: 52px; border-left: 0; border-bottom: 0; border-radius: 0 10px 0 0; }
+  .c-bl { bottom: 52px; left: 52px; border-right: 0; border-top: 0; border-radius: 0 0 0 10px; }
+  .c-br { bottom: 52px; right: 52px; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
 
   .content {
     position: relative; height: 100%;
     display: flex; flex-direction: column; align-items: center;
-    padding: 66px 78px 58px;
+    text-align: center;
+    padding: 108px 90px 96px;
   }
 
   .badge {
-    background: #b0402c; color: #fff6e8;
-    font-weight: 700; font-size: 30px; letter-spacing: 6px;
-    padding: 10px 34px 12px; border-radius: 999px;
-    box-shadow: 0 4px 14px rgba(176, 64, 44, 0.35);
+    display: flex; align-items: center; gap: 16px;
+    color: #b0402c; font-weight: 700; font-size: 30px; letter-spacing: 10px;
   }
+  .badge .dot { width: 9px; height: 9px; border-radius: 50%; background: #b0402c; opacity: 0.8; }
 
   h1 {
     font-family: 'Black Han Sans', 'Noto Sans KR', sans-serif;
     font-weight: 400;
-    text-align: center;
     color: #3c2a17;
-    font-size: 88px;
-    line-height: 1.14;
-    margin-top: 26px;
-    letter-spacing: -1px;
+    font-size: 108px;
+    line-height: 1.18;
+    margin-top: 34px;
+    letter-spacing: -2px;
   }
   h1 .accent { color: #b0402c; }
 
-  .cards { width: 100%; margin-top: 44px; display: flex; flex-direction: column; gap: 22px; }
-
-  .card {
-    display: flex; align-items: center; gap: 26px;
-    background: rgba(255, 253, 246, 0.92);
-    border: 2px solid rgba(146, 84, 30, 0.18);
-    border-radius: 22px;
-    padding: 20px 34px;
-    box-shadow: 0 6px 18px rgba(120, 72, 20, 0.10);
+  .divider {
+    margin-top: 46px;
+    display: flex; align-items: center; gap: 20px;
   }
+  .divider .line { width: 150px; height: 2px; background: rgba(146, 84, 30, 0.4); }
+  .divider svg { width: 30px; height: 30px; }
 
-  .price {
-    flex: 0 0 208px; text-align: center;
-    font-family: 'Black Han Sans', 'Noto Sans KR', sans-serif;
-    font-size: 46px; color: #fffdf5;
-    padding: 14px 0 16px; border-radius: 16px;
+  .sub {
+    margin-top: 40px;
+    font-weight: 700; font-size: 42px; color: #6b4a22;
     letter-spacing: 0;
   }
-  .p3  { background: linear-gradient(135deg, #5c7a3f, #3f5c2a); }
-  .p5  { background: linear-gradient(135deg, #e07b2e, #c05a17); }
-  .p10 { background: linear-gradient(135deg, #a3312a, #7c1f1a); }
+  .sub .price { color: #b0402c; font-weight: 900; }
 
-  .icon { flex: 0 0 92px; height: 92px; }
-
-  .label { display: flex; flex-direction: column; }
-  .label .name {
-    font-weight: 900; font-size: 52px; color: #33230f; letter-spacing: -1px; line-height: 1.1;
-  }
-  .label .desc {
-    font-weight: 500; font-size: 27px; color: #8a6b45; margin-top: 6px;
+  .sub2 {
+    margin-top: 14px;
+    display: inline-block;
+    font-weight: 900; font-size: 52px; color: #fffdf5;
+    background: linear-gradient(135deg, #b0402c, #8f2f1e);
+    padding: 16px 52px 20px; border-radius: 999px;
+    letter-spacing: 2px;
+    box-shadow: 0 8px 24px rgba(176, 64, 44, 0.35);
   }
 
-  .footer {
-    margin-top: auto;
-    display: flex; align-items: center; gap: 18px;
-    color: #6b4a22; font-weight: 700; font-size: 29px; letter-spacing: 0;
-    white-space: nowrap;
-  }
-  .footer .line { width: 70px; height: 2px; background: rgba(107, 74, 34, 0.45); }
+  /* 하단 보자기 선물 일러스트 */
+  .gift { margin-top: auto; width: 330px; filter: drop-shadow(0 10px 16px rgba(120, 60, 20, 0.25)); }
 </style>
 </head>
 <body>
   <div class="lattice"></div>
   <div class="moon"></div>
+
+  <svg class="cloud cloud-1" viewBox="0 0 200 60">
+    <path d="M20 45 C4 45 2 30 14 25 C12 12 30 6 40 14 C46 2 68 2 74 13 C88 8 100 18 96 30 C110 28 116 45 100 45 Z"
+      fill="#fff" opacity="0.85"/>
+  </svg>
+  <svg class="cloud cloud-2" viewBox="0 0 200 60">
+    <path d="M20 45 C4 45 2 30 14 25 C12 12 30 6 40 14 C46 2 68 2 74 13 C88 8 100 18 96 30 C110 28 116 45 100 45 Z"
+      fill="#fff" opacity="0.8"/>
+  </svg>
+
+  <svg class="leaf leaf-1" viewBox="0 0 60 60"><path d="M30 4 C44 16 50 32 30 56 C10 32 16 16 30 4 Z" fill="#c9553f"/><path d="M30 10 L30 50" stroke="#8f2f1e" stroke-width="2" opacity="0.6"/></svg>
+  <svg class="leaf leaf-2" viewBox="0 0 60 60"><path d="M30 4 C44 16 50 32 30 56 C10 32 16 16 30 4 Z" fill="#e0912e"/><path d="M30 10 L30 50" stroke="#a86215" stroke-width="2" opacity="0.6"/></svg>
+  <svg class="leaf leaf-3" viewBox="0 0 60 60"><path d="M30 4 C44 16 50 32 30 56 C10 32 16 16 30 4 Z" fill="#e0912e"/><path d="M30 10 L30 50" stroke="#a86215" stroke-width="2" opacity="0.6"/></svg>
+  <svg class="leaf leaf-4" viewBox="0 0 60 60"><path d="M30 4 C44 16 50 32 30 56 C10 32 16 16 30 4 Z" fill="#c9553f"/><path d="M30 10 L30 50" stroke="#8f2f1e" stroke-width="2" opacity="0.6"/></svg>
+  <svg class="leaf leaf-5" viewBox="0 0 60 60"><path d="M30 4 C44 16 50 32 30 56 C10 32 16 16 30 4 Z" fill="#d9a63a"/><path d="M30 10 L30 50" stroke="#a86215" stroke-width="2" opacity="0.6"/></svg>
+
   <div class="frame"></div>
+  <div class="corner c-tl"></div>
+  <div class="corner c-tr"></div>
+  <div class="corner c-bl"></div>
+  <div class="corner c-br"></div>
 
   <div class="content">
-    <div class="badge">2026 추석</div>
+    <div class="badge"><span class="dot"></span>HAPPY CHUSEOK<span class="dot"></span></div>
+
     <h1>추석 선물세트<br><span class="accent">고민이라면?</span></h1>
 
-    <div class="cards">
-      <div class="card">
-        <div class="price p3">3만원대</div>
-        <svg class="icon" viewBox="0 0 100 100">
-          <!-- 한과: 유과 스택 -->
-          <rect x="14" y="58" width="72" height="20" rx="9" fill="#e8b04c"/>
-          <rect x="20" y="40" width="60" height="19" rx="9" fill="#f2c96e"/>
-          <rect x="27" y="23" width="46" height="18" rx="9" fill="#f7dc95"/>
-          <g fill="#fff" opacity="0.85">
-            <circle cx="34" cy="32" r="1.9"/><circle cx="46" cy="29" r="1.9"/><circle cx="58" cy="33" r="1.9"/>
-            <circle cx="33" cy="49" r="1.9"/><circle cx="50" cy="47" r="1.9"/><circle cx="66" cy="50" r="1.9"/>
-            <circle cx="28" cy="67" r="1.9"/><circle cx="47" cy="70" r="1.9"/><circle cx="65" cy="66" r="1.9"/><circle cx="77" cy="69" r="1.9"/>
-          </g>
-        </svg>
-        <div class="label">
-          <div class="name">한과 세트</div>
-          <div class="desc">정갈한 마음, 부담 없는 가격</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="price p5">5만원대</div>
-        <svg class="icon" viewBox="0 0 100 100">
-          <!-- 곶감 -->
-          <path d="M50 20 C72 20 84 38 82 58 C80 78 66 88 50 88 C34 88 20 78 18 58 C16 38 28 20 50 20 Z" fill="#e0752f"/>
-          <path d="M50 24 C58 24 66 30 68 40 C60 34 40 34 32 40 C34 30 42 24 50 24 Z" fill="#c85f1d"/>
-          <path d="M50 6 L54 20 L46 20 Z" fill="#6d4a22"/>
-          <g fill="#4f7a35">
-            <path d="M50 16 L64 12 L56 22 Z"/>
-            <path d="M50 16 L36 12 L44 22 Z"/>
-          </g>
-          <path d="M34 52 C40 62 60 62 66 52" stroke="#b5511a" stroke-width="3" fill="none" stroke-linecap="round"/>
-          <ellipse cx="42" cy="44" rx="6" ry="9" fill="#f0975a" opacity="0.6"/>
-        </svg>
-        <div class="label">
-          <div class="name">곶감 세트</div>
-          <div class="desc">어르신 취향 저격 안전픽</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="price p10">10만원대</div>
-        <svg class="icon" viewBox="0 0 100 100">
-          <!-- 한우: 마블링 스테이크 -->
-          <path d="M18 38 C18 24 36 18 52 20 C72 22 86 32 84 48 C82 66 68 80 48 80 C28 80 14 66 18 38 Z" fill="#c0392b"/>
-          <path d="M24 40 C24 30 38 25 51 27 C67 29 78 36 77 48 C75 62 64 73 48 73 C32 73 21 62 24 40 Z" fill="#d95a4a"/>
-          <g stroke="#ffe9e0" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9">
-            <path d="M32 40 C40 36 48 42 56 38"/>
-            <path d="M30 52 C40 48 50 56 62 50"/>
-            <path d="M36 63 C44 58 54 64 62 60"/>
-            <path d="M58 33 C64 36 68 42 70 47"/>
-          </g>
-        </svg>
-        <div class="label">
-          <div class="name">한우 선물세트</div>
-          <div class="desc">귀한 분께 제대로 한 수</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer">
+    <div class="divider">
       <div class="line"></div>
-      3만원대부터 10만원대까지 · 인기 추석선물
+      <svg viewBox="0 0 30 30"><circle cx="15" cy="15" r="6" fill="none" stroke="#b0402c" stroke-width="2.4" opacity="0.8"/><circle cx="15" cy="15" r="2.4" fill="#b0402c" opacity="0.8"/></svg>
       <div class="line"></div>
     </div>
+
+    <div class="sub"><span class="price">3만원대</span>부터 <span class="price">10만원대</span>까지</div>
+    <div class="sub2">인기 추석선물</div>
+
+    <svg class="gift" viewBox="0 0 300 190">
+      <!-- 보자기로 싼 선물 -->
+      <path d="M42 178 C36 128 52 96 150 92 C248 96 264 128 258 178 Z" fill="#b0402c"/>
+      <path d="M42 178 C36 128 52 96 150 92 C248 96 264 128 258 178 Z" fill="url(#shade)" opacity="0.25"/>
+      <!-- 보자기 주름 -->
+      <path d="M96 100 C104 130 108 156 106 178" stroke="#8f2f1e" stroke-width="3" fill="none" opacity="0.6"/>
+      <path d="M204 100 C196 130 192 156 194 178" stroke="#8f2f1e" stroke-width="3" fill="none" opacity="0.6"/>
+      <path d="M150 92 C150 122 150 152 150 178" stroke="#8f2f1e" stroke-width="3" fill="none" opacity="0.45"/>
+      <!-- 매듭 -->
+      <path d="M118 74 C126 56 146 56 150 72 C154 56 174 56 182 74 C174 88 158 92 150 86 C142 92 126 88 118 74 Z" fill="#c9553f"/>
+      <path d="M150 72 C146 80 146 84 150 88 C154 84 154 80 150 72 Z" fill="#8f2f1e" opacity="0.7"/>
+      <ellipse cx="150" cy="90" rx="12" ry="7" fill="#8f2f1e"/>
+      <!-- 매듭 리본 끝자락 -->
+      <path d="M128 82 C114 92 108 104 110 116 C122 112 130 100 134 90 Z" fill="#c9553f" opacity="0.9"/>
+      <path d="M172 82 C186 92 192 104 190 116 C178 112 170 100 166 90 Z" fill="#c9553f" opacity="0.9"/>
+      <defs>
+        <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity="0.35"/>
+          <stop offset="1" stop-color="#000" stop-opacity="0.18"/>
+        </linearGradient>
+      </defs>
+    </svg>
   </div>
 </body>
 </html>
